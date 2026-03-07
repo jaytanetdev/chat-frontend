@@ -40,8 +40,11 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
 
   const allMessages = useMemo(() => {
     if (!data) return [];
-    // Reverse pages and items to show oldest first, newest last
-    return data.pages.flatMap((page) => page.items).reverse();
+    // Pages are in order: [first page (newest), second page (older), ...]
+    // Each page.items is already in chronological order (oldest first) from backend
+    // We need to reverse pages to get oldest first, then flatten
+    const reversedPages = [...data.pages].reverse();
+    return reversedPages.flatMap((page) => page.items);
   }, [data]);
 
   // Track if user is near bottom (should auto-scroll on new messages)
@@ -92,10 +95,29 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
   // Scroll to bottom on initial load and new messages
   useEffect(() => {
     if (scrollRef.current && shouldScrollToBottomRef.current && !isFetchingPreviousPage) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-      shouldScrollToBottomRef.current = false;
+      // Use requestAnimationFrame to ensure DOM is updated
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          shouldScrollToBottomRef.current = false;
+        }
+      });
     }
   }, [allMessages.length, isFetchingPreviousPage]);
+
+  // Auto-scroll to bottom on initial load
+  useEffect(() => {
+    if (!isLoading && scrollRef.current && allMessages.length > 0) {
+      // Initial load - scroll to bottom
+      requestAnimationFrame(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+          isNearBottomRef.current = true;
+          shouldScrollToBottomRef.current = false;
+        }
+      });
+    }
+  }, [isLoading, allMessages.length]);
 
   // Infinite scroll: observer on top sentinel to load older messages
   const handleObserver = useCallback(
@@ -137,11 +159,12 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
   }
 
   return (
-    <div className="relative flex flex-1 flex-col overflow-y-auto bg-gray-50">
+    <div className="relative flex flex-1 flex-col overflow-hidden bg-gray-50">
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-4 py-4"
         onScroll={handleScroll}
+        style={{ scrollBehavior: 'auto' }}
       >
         {/* Top sentinel for infinite scroll (load older messages) */}
         <div ref={topSentinelRef} className="h-1" />
@@ -162,6 +185,8 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
             />
           ))}
         </div>
+        {/* Bottom sentinel for detecting when at bottom */}
+        <div className="h-1" />
       </div>
 
       {/* Scroll to bottom button */}

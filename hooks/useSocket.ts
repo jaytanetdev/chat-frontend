@@ -32,45 +32,38 @@ export function useSocket() {
           );
           if (messageExists) return oldData;
 
-          // Add new message to the last page (newest messages)
+          // Pages are in order: [first page (newest), second page (older), ...]
+          // Each page.items is in chronological order (oldest first)
+          // New messages should be added to the first page (newest page) at the end
           const pages = [...oldData.pages];
-          const lastPage = pages[pages.length - 1];
+          const firstPage = pages[0];
 
-          if (lastPage) {
-            // Check if last page already has this message
-            const existsInLastPage = lastPage.items.some((item) => item.chat_id === chat.chat_id);
-            if (!existsInLastPage) {
-              pages[pages.length - 1] = {
-                ...lastPage,
-                items: [...lastPage.items, chat],
+          if (firstPage) {
+            // Check if first page already has this message
+            const existsInFirstPage = firstPage.items.some((item) => item.chat_id === chat.chat_id);
+            if (!existsInFirstPage) {
+              // Add new message at the end of first page (newest messages)
+              pages[0] = {
+                ...firstPage,
+                items: [...firstPage.items, chat],
               };
             }
+          } else {
+            // No pages yet, create first page with new message
+            pages.push({
+              items: [chat],
+              next_cursor: null,
+              hasMore: false,
+            });
           }
 
           return { ...oldData, pages };
         },
       );
 
-      // Update room list in cache - move room to top only on new message
-      queryClient.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
-        if (!oldRooms) return oldRooms;
-
-        const roomIndex = oldRooms.findIndex((r) => r.room_id === chat.room_id);
-        if (roomIndex === -1) return oldRooms;
-
-        // Create new array with updated room at top
-        const updatedRooms = [...oldRooms];
-        const [room] = updatedRooms.splice(roomIndex, 1);
-
-        // Update room's last message info
-        const updatedRoom = {
-          ...room,
-          last_message_at: chat.create_at,
-          unread_count: chat.direction === 'IN' ? (room.unread_count || 0) + 1 : room.unread_count,
-        };
-
-        return [updatedRoom, ...updatedRooms];
-      });
+      // Invalidate rooms query to get fresh data (real-time update)
+      // This ensures the room list shows updated unread count and last message
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     });
 
     socket.on('room_updated', (data: { room_id: string; unread_count?: number; last_message_at?: string }) => {
