@@ -88,7 +88,7 @@ export default function ChatInput({ roomId }: ChatInputProps) {
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
-      className="flex items-end gap-2 border-t border-gray-200 bg-white px-4 py-3"
+      className="flex items-end gap-2 border-t border-gray-200 bg-white px-2 py-2 sm:px-4 sm:py-3"
     >
       <textarea
         {...register('message')}
@@ -99,7 +99,7 @@ export default function ChatInput({ roomId }: ChatInputProps) {
         onFocus={handleInputFocus}
         onMouseDown={handleInputFocus}
         onPointerDown={handleInputFocus}
-        className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+        className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm sm:px-4 sm:py-2.5 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
       />
       <button
         type="submit"

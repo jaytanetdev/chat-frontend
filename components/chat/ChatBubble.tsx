@@ -37,7 +37,7 @@ export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
     >
       <div
         className={cn(
-          'max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2',
+          'max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] rounded-2xl px-3 py-2 sm:px-4',
           isCurrentUser
             ? 'rounded-br-md bg-primary-500 text-white'
             : 'rounded-bl-md bg-gray-100 text-gray-900',

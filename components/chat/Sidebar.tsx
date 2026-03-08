@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Search, MessageSquare } from 'lucide-react';
+import { Search, MessageSquare, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import RoomItem from './RoomItem';
 import AdminProfile from '@/components/layout/AdminProfile';
@@ -14,6 +14,10 @@ import { useChatStore } from '@/stores/chat.store';
 import { PlatformType, type Room } from '@/types/api';
 import { useState } from 'react';
 
+interface SidebarProps {
+  onClose?: () => void;
+}
+
 const PLATFORM_TABS: { key: string | null; label: string; type?: PlatformType }[] = [
   { key: null, label: 'ทั้งหมด' },
   { key: 'LINE', label: 'LINE', type: PlatformType.LINE },
@@ -23,7 +27,7 @@ const PLATFORM_TABS: { key: string | null; label: string; type?: PlatformType }[
   { key: 'LAZADA', label: 'Lazada', type: PlatformType.LAZADA },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }: SidebarProps = {}) {
   const router = useRouter();
   const params = useParams();
   const activeRoomId = params?.roomId as string | undefined;
@@ -61,11 +65,20 @@ export default function Sidebar() {
   }, [rooms, activeShopId, platformFilter, searchQuery]);
 
   return (
-    <div className="flex h-full w-80 flex-col border-r border-gray-200 bg-white">
+    <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-white sm:w-80">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3">
         <MessageSquare className="h-5 w-5 text-primary-500" />
         <h1 className="text-lg font-bold text-gray-900">แชท</h1>
+        {onClose && (
+          <button
+            onClick={onClose}
+            className="ml-auto rounded-lg p-1 text-gray-600 hover:bg-gray-100 lg:hidden"
+            aria-label="Close sidebar"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
         {shops && shops.length > 1 && (
           <select
             value={activeShopId ?? ''}
@@ -83,20 +96,21 @@ export default function Sidebar() {
       </div>
 
       {/* Platform filter tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-3 py-2">
+      <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-2 py-2 sm:px-3">
         {PLATFORM_TABS.map((tab) => (
           <button
             key={tab.key ?? 'all'}
             onClick={() => setPlatformFilter(tab.key)}
             className={cn(
-              'flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors',
+              'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors sm:px-3',
               platformFilter === tab.key
                 ? 'bg-primary-500 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
             )}
           >
             {tab.type && <PlatformIcon type={tab.type} size="sm" className={platformFilter === tab.key ? 'text-white' : ''} />}
-            {tab.label}
+            <span className="hidden sm:inline">{tab.label}</span>
+            <span className="sm:hidden">{tab.label.length > 4 ? tab.label.substring(0, 4) : tab.label}</span>
           </button>
         ))}
       </div>
@@ -129,7 +143,10 @@ export default function Sidebar() {
               key={room.room_id}
               room={room}
               isActive={activeRoomId === room.room_id}
-              onClick={() => router.push(`/chat/${room.room_id}`)}
+              onClick={() => {
+                router.push(`/chat/${room.room_id}`);
+                onClose?.();
+              }}
             />
           ))
         )}
