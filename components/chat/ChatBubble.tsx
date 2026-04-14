@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/cn';
 import { ChatSenderType, ChatMessageType, type Chat } from '@/types/api';
+import type { PlatformTheme } from '@/lib/platform-theme';
 import { Download } from 'lucide-react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
@@ -9,6 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 interface ChatBubbleProps {
   chat: Chat;
   isCurrentUser: boolean;
+  theme: PlatformTheme;
 }
 
 function formatTime(dateStr: string): string {
@@ -76,14 +78,14 @@ function MediaContent({ chat }: { chat: Chat }) {
 
     case ChatMessageType.STICKER: {
       const emoji = chat.metadata?.emoji as string | undefined;
-      const platformType = chat.metadata?.platformType as string | undefined;
+      const metaPlatform = chat.metadata?.platformType as string | undefined;
       const stickerId = chat.metadata?.stickerId as string | undefined;
 
       if (emoji) {
         return <span className="text-7xl leading-none">{emoji}</span>;
       }
 
-      if (platformType === 'FACEBOOK' && stickerId) {
+      if (metaPlatform === 'FACEBOOK' && stickerId) {
         const knownFbStickers: Record<string, string> = {
           '369239263222822': '\u{1F44D}',
           '369239343222814': '\u{1F44D}',
@@ -142,9 +144,10 @@ function MediaContent({ chat }: { chat: Chat }) {
   }
 }
 
-export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
+export default function ChatBubble({ chat, isCurrentUser, theme }: ChatBubbleProps) {
   const isSystem = chat.sender_type === ChatSenderType.SYSTEM;
   const isMedia = chat.message_type !== ChatMessageType.TEXT;
+  const isSticker = chat.message_type === ChatMessageType.STICKER;
 
   if (isSystem) {
     return (
@@ -167,13 +170,13 @@ export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
         className={cn(
           'max-w-[85%] sm:max-w-[75%] md:max-w-[70%] lg:max-w-[65%] rounded-2xl px-3 py-2 sm:px-4',
           isCurrentUser
-            ? 'rounded-br-md bg-primary-500 text-white'
+            ? cn('rounded-br-md', theme.bubble)
             : 'rounded-bl-md bg-gray-100 text-gray-900',
-          chat.message_type === ChatMessageType.STICKER && 'bg-transparent px-0 py-0',
+          isSticker && 'bg-transparent px-0 py-0',
         )}
       >
         {!isCurrentUser && chat.sender_name && (
-          <p className="mb-0.5 text-[11px] font-medium text-primary-600">
+          <p className={cn('mb-0.5 text-[11px] font-medium', theme.senderName)}>
             {chat.sender_name}
           </p>
         )}
@@ -186,8 +189,8 @@ export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
 
         <p
           className={cn(
-            'mt-1 text-[10px]',
-            isCurrentUser ? 'text-primary-200 text-right' : 'text-gray-400 text-right',
+            'mt-1 text-[10px] text-right',
+            isCurrentUser ? theme.timeText : 'text-gray-400',
           )}
         >
           {formatTime(chat.create_at)}

@@ -10,6 +10,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { cn } from '@/lib/cn';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { ChatSenderType, ChatListResponse, PlatformType } from '@/types/api';
+import { getPlatformTheme } from '@/lib/platform-theme';
 import api from '@/lib/axios';
 import axios from 'axios';
 
@@ -34,6 +35,7 @@ const DEFAULT_REPLIES: QuickReplyItem[] = [
 ];
 
 export default function ChatInput({ roomId, platformType = PlatformType.LINE }: ChatInputProps) {
+  const theme = getPlatformTheme(platformType);
   const { emitTyping, markRead } = useSocket();
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
@@ -500,7 +502,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
             onClick={() => { setShowQuickReplies((p) => !p); setShowStickerPicker(false); }}
             className={cn(
               'rounded-lg p-2 transition-colors',
-              showQuickReplies ? 'bg-primary-50 text-primary-500' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
+              showQuickReplies ? theme.activeTab : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
             title="ข้อความด่วน (กดปุ่ม /)"
           >
@@ -511,7 +513,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
             onClick={() => { setShowStickerPicker((p) => !p); setShowQuickReplies(false); }}
             className={cn(
               'rounded-lg p-2 transition-colors',
-              showStickerPicker ? 'bg-primary-50 text-primary-500' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
+              showStickerPicker ? theme.activeTab : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
             )}
             title="สติกเกอร์"
           >
@@ -530,7 +532,10 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
           onKeyDown={handleKeyDown}
           onInput={handleInput}
           onFocus={handleInputFocus}
-          className="flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm sm:px-4 sm:py-2.5 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          className={cn(
+            'flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm sm:px-4 sm:py-2.5 focus:outline-none focus:ring-1',
+            theme.inputFocus,
+          )}
         />
 
         <button
@@ -539,7 +544,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
           className={cn(
             'shrink-0 rounded-xl p-2.5 transition-colors',
             canSend && !isSending && uploadStatus !== 'uploading'
-              ? 'bg-primary-500 text-white hover:bg-primary-600'
+              ? cn(theme.sendBtn, theme.sendBtnHover)
               : 'bg-gray-200 text-gray-400 cursor-not-allowed',
           )}
         >

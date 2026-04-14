@@ -4,6 +4,7 @@ import { cn } from '@/lib/cn';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import PlatformIcon from '@/components/ui/PlatformIcon';
+import { getPlatformTheme } from '@/lib/platform-theme';
 import type { Room } from '@/types/api';
 
 interface RoomItemProps {
@@ -35,6 +36,7 @@ export default function RoomItem({ room, isActive, onClick }: RoomItemProps) {
   const customer = room.customer_identity;
   const displayName = customer?.display_name ?? customer?.external_user_id ?? 'ไม่ทราบชื่อ';
   const platformType = room.platform?.platform_type;
+  const theme = getPlatformTheme(platformType);
   const hasUnread = room.unread_count > 0;
   const lastMessage = room.last_message_text;
 
@@ -43,7 +45,7 @@ export default function RoomItem({ room, isActive, onClick }: RoomItemProps) {
       onClick={onClick}
       className={cn(
         'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-50',
-        isActive && 'bg-primary-50 hover:bg-primary-50',
+        isActive && theme.activeRoom,
       )}
     >
       <div className="relative shrink-0">
@@ -69,7 +71,7 @@ export default function RoomItem({ room, isActive, onClick }: RoomItemProps) {
           </p>
           <span className={cn(
             'shrink-0 text-[11px]',
-            hasUnread ? 'font-medium text-primary-500' : 'text-gray-400',
+            hasUnread ? cn('font-medium', theme.unreadTime) : 'text-gray-400',
           )}>
             {formatTime(room.last_message_at)}
           </span>

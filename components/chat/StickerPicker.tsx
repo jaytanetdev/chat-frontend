@@ -3,6 +3,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { cn } from '@/lib/cn';
 import { PlatformType } from '@/types/api';
+import { getPlatformTheme } from '@/lib/platform-theme';
 
 interface StickerPackage {
   packageId: string;
@@ -149,6 +150,7 @@ interface StickerPickerProps {
 
 export default function StickerPicker({ platformType, onSelect, onClose }: StickerPickerProps) {
   const isLine = platformType !== PlatformType.FACEBOOK;
+  const theme = getPlatformTheme(platformType);
 
   const packages = useMemo(
     () => (isLine ? LINE_STICKER_PACKAGES : FB_EMOJI_STICKERS),
@@ -180,7 +182,7 @@ export default function StickerPicker({ platformType, onSelect, onClose }: Stick
             className={cn(
               'shrink-0 rounded-lg p-1 transition-colors',
               activePackage.packageId === pkg.packageId
-                ? 'bg-primary-50 ring-1 ring-primary-300'
+                ? cn('ring-1', theme.activeTab)
                 : 'hover:bg-gray-50',
             )}
             title={pkg.title}

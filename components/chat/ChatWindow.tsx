@@ -11,6 +11,8 @@ import { useSocket } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
 import { ChatSenderType, PlatformType } from '@/types/api';
+import { getPlatformTheme } from '@/lib/platform-theme';
+import { cn } from '@/lib/cn';
 import { ChevronDown } from 'lucide-react';
 
 interface ChatWindowProps {
@@ -23,6 +25,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
   const { data: rooms } = useRooms();
   const currentRoom = rooms?.find((r) => r.room_id === roomId);
   const platformType = currentRoom?.platform?.platform_type ?? PlatformType.LINE;
+  const theme = getPlatformTheme(platformType);
   const { joinRoom, leaveRoom, markRead } = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -192,6 +195,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
                 chat.sender_type === ChatSenderType.ADMIN &&
                 chat.sender_id === userId
               }
+              theme={theme}
             />
           ))}
         </div>
@@ -201,7 +205,10 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
       {showScrollButton && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full bg-primary-500 px-3 py-1.5 text-white shadow-lg transition-all hover:bg-primary-600 sm:px-4 sm:py-2"
+          className={cn(
+            'absolute bottom-20 left-1/2 z-10 -translate-x-1/2 rounded-full px-3 py-1.5 text-white shadow-lg transition-all sm:px-4 sm:py-2',
+            theme.scrollBtn,
+          )}
         >
           <div className="flex items-center gap-1">
             <ChevronDown className="h-4 w-4" />
