@@ -132,7 +132,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
-    <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-white sm:w-80">
+    <div className="flex h-full w-80 flex-col border-r border-gray-200 bg-white sm:w-[340px]">
       {/* Header */}
       <div className="flex items-center gap-2 border-b border-gray-200 px-4 py-3">
         <MessageSquare className="h-5 w-5 text-primary-500" />
@@ -163,7 +163,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       </div>
 
       {/* Platform filter with unread badges */}
-      <div className="flex flex-wrap gap-1 border-b border-gray-100 px-2 py-2">
+      <div className="grid grid-cols-3 gap-1.5 border-b border-gray-100 px-3 py-2">
         {PLATFORMS.map((p) => {
           const isActive = platformFilter === p.key;
           const unread = p.key
@@ -174,7 +174,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
               key={p.key ?? 'all'}
               onClick={() => setPlatformFilter(isActive && p.key !== null ? null : p.key)}
               className={cn(
-                'relative flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all',
+                'flex items-center justify-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-all',
                 isActive ? p.activeBg : cn(p.bg, p.color, 'hover:opacity-80'),
               )}
             >
