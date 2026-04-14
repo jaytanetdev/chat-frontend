@@ -75,6 +75,31 @@ function MediaContent({ chat }: { chat: Chat }) {
       );
 
     case ChatMessageType.STICKER: {
+      const emoji = chat.metadata?.emoji as string | undefined;
+      const platformType = chat.metadata?.platformType as string | undefined;
+      const stickerId = chat.metadata?.stickerId as string | undefined;
+
+      if (emoji) {
+        return <span className="text-7xl leading-none">{emoji}</span>;
+      }
+
+      if (platformType === 'FACEBOOK' && stickerId) {
+        const knownFbStickers: Record<string, string> = {
+          '369239263222822': '\u{1F44D}',
+          '369239343222814': '\u{1F44D}',
+          '369239383222810': '\u{1F44D}',
+        };
+        const mappedEmoji = knownFbStickers[stickerId];
+        if (mappedEmoji) {
+          return <span className="text-7xl leading-none">{mappedEmoji}</span>;
+        }
+        return (
+          <span className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-400">
+            [FB Sticker]
+          </span>
+        );
+      }
+
       const stickerResourceType = chat.metadata?.stickerResourceType as string | undefined;
       const isAnimated = stickerResourceType === 'ANIMATION' || stickerResourceType === 'ANIMATION_SOUND';
       const stickerSrc = isAnimated

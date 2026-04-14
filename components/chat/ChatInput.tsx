@@ -9,12 +9,13 @@ import { sendMessageSchema, type SendMessageFormData } from '@/schemas/chat.sche
 import { useSocket } from '@/hooks/useSocket';
 import { cn } from '@/lib/cn';
 import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
-import { ChatSenderType, ChatListResponse } from '@/types/api';
+import { ChatSenderType, ChatListResponse, PlatformType } from '@/types/api';
 import api from '@/lib/axios';
 import axios from 'axios';
 
 interface ChatInputProps {
   roomId: string;
+  platformType?: PlatformType;
 }
 
 interface QuickReplyItem {
@@ -32,7 +33,7 @@ const DEFAULT_REPLIES: QuickReplyItem[] = [
   { quick_reply_id: '_default_3', label: 'รอสักครู่', text: 'รบกวนรอสักครู่นะครับ กำลังตรวจสอบให้ครับ', sort_order: 2 },
 ];
 
-export default function ChatInput({ roomId }: ChatInputProps) {
+export default function ChatInput({ roomId, platformType = PlatformType.LINE }: ChatInputProps) {
   const { emitTyping, markRead } = useSocket();
   const typingTimeout = useRef<NodeJS.Timeout | null>(null);
   const queryClient = useQueryClient();
@@ -548,6 +549,7 @@ export default function ChatInput({ roomId }: ChatInputProps) {
 
       {showStickerPicker && (
         <StickerPicker
+          platformType={platformType}
           onSelect={sendSticker}
           onClose={() => setShowStickerPicker(false)}
         />

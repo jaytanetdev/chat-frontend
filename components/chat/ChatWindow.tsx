@@ -6,10 +6,11 @@ import ChatInput from './ChatInput';
 import TypingIndicator from './TypingIndicator';
 import Spinner from '@/components/ui/Spinner';
 import { useMessages } from '@/hooks/useMessages';
+import { useRooms } from '@/hooks/useRooms';
 import { useSocket } from '@/hooks/useSocket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
-import { ChatSenderType } from '@/types/api';
+import { ChatSenderType, PlatformType } from '@/types/api';
 import { ChevronDown } from 'lucide-react';
 
 interface ChatWindowProps {
@@ -19,6 +20,9 @@ interface ChatWindowProps {
 export default function ChatWindow({ roomId }: ChatWindowProps) {
   const userId = useAuthStore((s) => s.userId);
   const setActiveRoomId = useChatStore((s) => s.setActiveRoomId);
+  const { data: rooms } = useRooms();
+  const currentRoom = rooms?.find((r) => r.room_id === roomId);
+  const platformType = currentRoom?.platform?.platform_type ?? PlatformType.LINE;
   const { joinRoom, leaveRoom, markRead } = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
@@ -207,7 +211,7 @@ export default function ChatWindow({ roomId }: ChatWindowProps) {
       )}
 
       <TypingIndicator roomId={roomId} />
-      <ChatInput roomId={roomId} />
+      <ChatInput roomId={roomId} platformType={platformType} />
     </div>
   );
 }
