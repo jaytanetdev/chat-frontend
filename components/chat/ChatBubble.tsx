@@ -1,7 +1,10 @@
 'use client';
 
 import { cn } from '@/lib/cn';
-import { ChatSenderType, type Chat } from '@/types/api';
+import { ChatSenderType, ChatMessageType, type Chat } from '@/types/api';
+import { Download } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:5000';
 
 interface ChatBubbleProps {
   chat: Chat;
@@ -15,8 +18,108 @@ function formatTime(dateStr: string): string {
   });
 }
 
+function resolveMediaUrl(url: string): string {
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
+}
+
+function MediaContent({ chat }: { chat: Chat }) {
+  const url = chat.metadata?.url as string | undefined;
+  if (!url) {
+    return <p className="text-sm whitespace-pre-wrap break-words">{chat.message || '[ไฟล์สื่อ]'}</p>;
+  }
+
+  const resolvedUrl = resolveMediaUrl(url);
+
+  switch (chat.message_type) {
+    case ChatMessageType.IMAGE:
+      return (
+        <a href={resolvedUrl} target="_blank" rel="noopener noreferrer">
+          <img
+            src={resolvedUrl}
+            alt="รูปภาพ"
+            className="max-h-60 rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+            loading="lazy"
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (!img.dataset.retried) {
+                img.dataset.retried = '1';
+                img.style.display = 'none';
+                img.parentElement?.insertAdjacentHTML(
+                  'beforeend',
+                  '<span class="text-sm text-gray-400">[ไม่สามารถโหลดรูปภาพ]</span>',
+                );
+              }
+            }}
+          />
+        </a>
+      );
+
+    case ChatMessageType.VIDEO:
+      return (
+        <video
+          src={resolvedUrl}
+          controls
+          preload="metadata"
+          className="max-h-60 max-w-full rounded-lg"
+        >
+          <a href={resolvedUrl} target="_blank" rel="noopener noreferrer">ดูวิดีโอ</a>
+        </video>
+      );
+
+    case ChatMessageType.AUDIO:
+      return (
+        <audio src={resolvedUrl} controls preload="metadata" className="max-w-full">
+          <a href={resolvedUrl} target="_blank" rel="noopener noreferrer">ฟังเสียง</a>
+        </audio>
+      );
+
+    case ChatMessageType.STICKER: {
+      const stickerResourceType = chat.metadata?.stickerResourceType as string | undefined;
+      const isAnimated = stickerResourceType === 'ANIMATION' || stickerResourceType === 'ANIMATION_SOUND';
+      const stickerSrc = isAnimated
+        ? resolvedUrl.replace('/android/sticker.png;compress=true', '/iPhone/sticker@2x.png')
+        : resolvedUrl;
+      return (
+        <img
+          src={stickerSrc}
+          alt="สติกเกอร์"
+          className="h-24 w-24"
+          loading="lazy"
+          onError={(e) => {
+            const img = e.currentTarget;
+            if (!img.dataset.retried) {
+              img.dataset.retried = '1';
+              img.src = resolvedUrl.replace('/android/sticker.png;compress=true', '/iPhone/sticker@2x.png');
+            }
+          }}
+        />
+      );
+    }
+
+    case ChatMessageType.FILE: {
+      const fileName = (chat.metadata?.fileName as string) || 'ไฟล์แนบ';
+      return (
+        <a
+          href={resolvedUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-2 rounded-lg border border-gray-200 bg-white/80 px-3 py-2 text-sm hover:bg-white transition-colors"
+        >
+          <Download className="h-4 w-4 shrink-0" />
+          <span className="truncate">{fileName}</span>
+        </a>
+      );
+    }
+
+    default:
+      return <p className="text-sm whitespace-pre-wrap break-words">{chat.message}</p>;
+  }
+}
+
 export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
   const isSystem = chat.sender_type === ChatSenderType.SYSTEM;
+  const isMedia = chat.message_type !== ChatMessageType.TEXT;
 
   if (isSystem) {
     return (
@@ -41,6 +144,7 @@ export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
           isCurrentUser
             ? 'rounded-br-md bg-primary-500 text-white'
             : 'rounded-bl-md bg-gray-100 text-gray-900',
+          chat.message_type === ChatMessageType.STICKER && 'bg-transparent px-0 py-0',
         )}
       >
         {!isCurrentUser && chat.sender_name && (
@@ -49,14 +153,10 @@ export default function ChatBubble({ chat, isCurrentUser }: ChatBubbleProps) {
           </p>
         )}
 
-        {chat.message_type === 'IMAGE' && chat.metadata?.url ? (
-          <img
-            src={chat.metadata.url as string}
-            alt="image"
-            className="max-h-60 rounded-lg"
-          />
+        {isMedia ? (
+          <MediaContent chat={chat} />
         ) : (
-          <p className="text-sm whitespace-pre-wrap wrap-break-word">{chat.message}</p>
+          <p className="text-sm whitespace-pre-wrap break-words">{chat.message}</p>
         )}
 
         <p

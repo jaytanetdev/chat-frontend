@@ -1,0 +1,84 @@
+---
+description: Complete project architecture for chat-frontend (Next.js 16 App Router)
+alwaysApply: true
+---
+
+# Chat Frontend — Next.js 16 App Router
+
+## Tech Stack
+
+- **Next.js 16** (App Router, React 19, `use()` for async params)
+- **Tailwind CSS v4** with `@theme` in `globals.css`
+- **Zustand** for client state (auth, chat UI)
+- **TanStack React Query v5** for server state
+- **Socket.IO client** for realtime (namespace `/chat`)
+- **react-hook-form + zod** for forms
+- **lucide-react** for icons
+- **axios** with auth interceptor and retry
+
+## Directory Layout
+
+```
+app/
+  layout.tsx          # Root: Thai font (Noto Sans Thai), QueryProvider
+  page.tsx            # Server redirect → /chat
+  login/page.tsx      # Login (client component)
+  chat/
+    layout.tsx        # AuthProvider + Sidebar + useSocket
+    page.tsx          # "Select a room" empty state
+    [roomId]/page.tsx # ChatWindow (use() to unwrap params Promise)
+components/
+  chat/    # ChatBubble, ChatInput, ChatWindow, RoomItem, Sidebar, TypingIndicator
+  layout/  # AdminProfile
+  ui/      # Avatar, Badge, Button, Input, PlatformIcon, Spinner
+hooks/     # useAuth, useMessages, useRooms, useSocket
+lib/       # axios instance, socket singleton, cn(), error-codes
+providers/ # AuthProvider (route guard), QueryProvider
+stores/    # auth.store (persisted), chat.store
+schemas/   # zod schemas for forms
+types/     # TypeScript interfaces (Room, Chat, Platform, User, etc.)
+```
+
+## State Architecture
+
+- **auth.store** (Zustand persist): token, userId, username, role, activeShopId
+- **chat.store** (Zustand): activeRoomId, platformFilter, typingUsers
+- **React Query keys**: `['rooms', platformId]`, `['messages', roomId]`, `['shops']`
+
+## API Layer
+
+- Base URL: `NEXT_PUBLIC_API_URL` (default `http://localhost:5000`)
+- Auto Bearer token from Zustand persist storage
+- 401 → clear storage → redirect `/login`
+- Retry: 3 attempts with exponential backoff for 5xx/network errors
+
+## Socket Events (namespace `/chat`)
+
+- `new_message` → merge into React Query messages cache + invalidate rooms
+- `room_updated` → patch rooms cache
+- `typing` → update Zustand typingUsers
+- `messages_read` → invalidate messages cache
+
+## Realtime Flow
+
+```
+ChatLayout mounts → useSocket() connects
+  → ChatWindow mounts → joinRoom(roomId)
+  → new_message event → update query cache
+  → ChatWindow unmounts → leaveRoom(roomId)
+```
+
+## Backend API Endpoints Used
+
+| Hook/Component | Method | Endpoint |
+|----------------|--------|----------|
+| useLogin | POST | /auth/login |
+| useRooms | GET | /rooms |
+| useShops | GET | /shops |
+| useMessages | GET | /chats/room/{roomId}/detailed |
+| ChatInput | POST | /chats/send |
+
+## Supported Message Types
+
+ChatMessageType: `TEXT`, `IMAGE`, `VIDEO`, `AUDIO`, `FILE`
+PlatformType: `LINE`, `FACEBOOK`, `INSTAGRAM`, `SHOPEE`, `LAZADA`

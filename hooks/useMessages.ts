@@ -16,27 +16,14 @@ export function useMessages(roomId: string | null) {
         `/chats/room/${roomId}/detailed`,
         { params },
       );
-      console.log('📥 Fetched messages:', {
-        itemsCount: res.data.items.length,
-        hasMore: res.data.hasMore,
-        nextCursor: res.data.next_cursor,
-        cursor: pageParam,
-      });
       return res.data;
     },
     initialPageParam: null as string | null,
     // Load older messages when scrolling up
     // lastPage here refers to the last page in the pages array (oldest page)
     // We check if it has more older messages
-    getNextPageParam: (lastPage, allPages) => {
-      const result = lastPage.hasMore && lastPage.next_cursor ? lastPage.next_cursor : undefined;
-      console.log('🔗 getNextPageParam:', {
-        hasMore: lastPage.hasMore,
-        nextCursor: lastPage.next_cursor,
-        willReturn: result,
-        totalPages: allPages.length,
-      });
-      return result;
+    getNextPageParam: (lastPage) => {
+      return lastPage.hasMore && lastPage.next_cursor ? lastPage.next_cursor : undefined;
     },
     enabled: !!roomId,
   });
