@@ -15,8 +15,8 @@ function handleNewMessage(chat: Chat) {
   if (!qc) return;
 
   const activeRoomId = useChatStore.getState().activeRoomId;
+  const isActiveRoom = chat.room_id === activeRoomId;
 
-  // Optimistically append the message to the active room's cache
   qc.setQueryData(
     ['messages', chat.room_id],
     (oldData: { pages: ChatListResponse[]; pageParams: unknown[] } | undefined) => {
@@ -40,16 +40,24 @@ function handleNewMessage(chat: Chat) {
     },
   );
 
-  if (chat.room_id === activeRoomId) {
-    qc.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
-      if (!oldRooms) return oldRooms;
-      return oldRooms.map((r) =>
-        r.room_id === chat.room_id
-          ? { ...r, unread_count: 0, last_message_at: chat.create_at, last_message_text: chat.message }
-          : r,
-      );
+  qc.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
+    if (!oldRooms) return oldRooms;
+    const updated = oldRooms.map((r) =>
+      r.room_id === chat.room_id
+        ? {
+            ...r,
+            last_message_at: chat.create_at,
+            last_message_text: chat.message || r.last_message_text,
+            ...(isActiveRoom ? { unread_count: 0 } : {}),
+          }
+        : r,
+    );
+    return updated.sort((a, b) => {
+      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+      return tb - ta;
     });
-  }
+  });
 
   qc.invalidateQueries({ queryKey: ['rooms'] });
 }
