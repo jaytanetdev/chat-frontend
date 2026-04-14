@@ -102,12 +102,30 @@ const LAZADA_THEME: PlatformTheme = {
   activeRoom: 'bg-[#0F1689]/5 hover:bg-[#0F1689]/5',
 };
 
+const TIKTOK_THEME: PlatformTheme = {
+  bubble: 'bg-[#010101] text-white',
+  bubbleHover: 'hover:bg-[#222]',
+  text: 'text-white',
+  timeText: 'text-gray-400',
+  senderName: 'text-[#FE2C55]',
+  inputFocus: 'focus:border-[#FE2C55] focus:ring-[#FE2C55]',
+  sendBtn: 'bg-[#FE2C55] text-white',
+  sendBtnHover: 'hover:bg-[#e0264c]',
+  activeTab: 'bg-[#FE2C55]/10 text-[#FE2C55] ring-[#FE2C55]/30',
+  scrollBtn: 'bg-[#FE2C55] hover:bg-[#e0264c]',
+  scrollBtnHover: 'hover:bg-[#e0264c]',
+  badgeText: 'text-[#FE2C55]',
+  unreadTime: 'text-[#FE2C55]',
+  activeRoom: 'bg-[#FE2C55]/5 hover:bg-[#FE2C55]/5',
+};
+
 const THEME_MAP: Record<PlatformType, PlatformTheme> = {
   [PlatformType.LINE]: LINE_THEME,
   [PlatformType.FACEBOOK]: FACEBOOK_THEME,
   [PlatformType.INSTAGRAM]: INSTAGRAM_THEME,
   [PlatformType.SHOPEE]: SHOPEE_THEME,
   [PlatformType.LAZADA]: LAZADA_THEME,
+  [PlatformType.TIKTOK]: TIKTOK_THEME,
 };
 
 export function getPlatformTheme(type?: PlatformType | null): PlatformTheme {

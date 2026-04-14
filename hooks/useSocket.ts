@@ -76,11 +76,14 @@ function handleNewMessage(chat: Chat) {
 
   qc.invalidateQueries({ queryKey: ['rooms-infinite'] });
   qc.invalidateQueries({ queryKey: ['rooms'] });
+  qc.invalidateQueries({ queryKey: ['unread-summary'] });
 }
 
 function handleRoomUpdated(data: { room_id: string; unread_count?: number; last_message_at?: string; last_message_text?: string }) {
   const qc = queryClientRef.current;
   if (!qc) return;
+
+  qc.invalidateQueries({ queryKey: ['unread-summary'] });
 
   qc.setQueriesData<InfiniteData<PaginatedRooms>>(
     { queryKey: ['rooms-infinite'] },

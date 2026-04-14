@@ -2,12 +2,15 @@
 
 import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Search, MessageSquare, X, MessageCircle, Facebook, Instagram } from 'lucide-react';
+import {
+  Search, MessageSquare, X, MessageCircle,
+  Facebook, Instagram, ShoppingBag, Package, Music,
+} from 'lucide-react';
 import { cn } from '@/lib/cn';
 import RoomItem from './RoomItem';
 import AdminProfile from '@/components/layout/AdminProfile';
 import Spinner from '@/components/ui/Spinner';
-import { useInfiniteRooms, useShops } from '@/hooks/useRooms';
+import { useInfiniteRooms, useUnreadSummary, useShops } from '@/hooks/useRooms';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
 import { PlatformType, type Room } from '@/types/api';
@@ -19,42 +22,61 @@ interface SidebarProps {
 const PLATFORMS: {
   key: string | null;
   label: string;
+  shortLabel: string;
   icon: React.ReactNode;
   color: string;
   bg: string;
   activeBg: string;
+  badgeColor: string;
 }[] = [
   {
-    key: null,
-    label: 'ทั้งหมด',
-    icon: <MessageSquare className="h-4 w-4" />,
-    color: 'text-gray-600',
-    bg: 'bg-gray-50',
+    key: null, label: 'ทั้งหมด', shortLabel: 'ทั้งหมด',
+    icon: <MessageSquare className="h-3.5 w-3.5" />,
+    color: 'text-gray-600', bg: 'bg-gray-50',
     activeBg: 'bg-gray-900 text-white',
+    badgeColor: 'bg-red-500 text-white',
   },
   {
-    key: 'LINE',
-    label: 'LINE',
-    icon: <MessageCircle className="h-4 w-4" />,
-    color: 'text-[#06C755]',
-    bg: 'bg-green-50',
+    key: 'LINE', label: 'LINE', shortLabel: 'LINE',
+    icon: <MessageCircle className="h-3.5 w-3.5" />,
+    color: 'text-[#06C755]', bg: 'bg-green-50',
     activeBg: 'bg-[#06C755] text-white',
+    badgeColor: 'bg-[#06C755] text-white',
   },
   {
-    key: 'FACEBOOK',
-    label: 'Facebook',
-    icon: <Facebook className="h-4 w-4" />,
-    color: 'text-[#1877F2]',
-    bg: 'bg-blue-50',
+    key: 'FACEBOOK', label: 'Facebook', shortLabel: 'FB',
+    icon: <Facebook className="h-3.5 w-3.5" />,
+    color: 'text-[#1877F2]', bg: 'bg-blue-50',
     activeBg: 'bg-[#1877F2] text-white',
+    badgeColor: 'bg-[#1877F2] text-white',
   },
   {
-    key: 'INSTAGRAM',
-    label: 'Instagram',
-    icon: <Instagram className="h-4 w-4" />,
-    color: 'text-[#E1306C]',
-    bg: 'bg-pink-50',
+    key: 'INSTAGRAM', label: 'Instagram', shortLabel: 'IG',
+    icon: <Instagram className="h-3.5 w-3.5" />,
+    color: 'text-[#E1306C]', bg: 'bg-pink-50',
     activeBg: 'bg-[#E1306C] text-white',
+    badgeColor: 'bg-[#E1306C] text-white',
+  },
+  {
+    key: 'SHOPEE', label: 'Shopee', shortLabel: 'Shopee',
+    icon: <ShoppingBag className="h-3.5 w-3.5" />,
+    color: 'text-[#EE4D2D]', bg: 'bg-orange-50',
+    activeBg: 'bg-[#EE4D2D] text-white',
+    badgeColor: 'bg-[#EE4D2D] text-white',
+  },
+  {
+    key: 'LAZADA', label: 'Lazada', shortLabel: 'Lazada',
+    icon: <Package className="h-3.5 w-3.5" />,
+    color: 'text-[#0F1689]', bg: 'bg-indigo-50',
+    activeBg: 'bg-[#0F1689] text-white',
+    badgeColor: 'bg-[#0F1689] text-white',
+  },
+  {
+    key: 'TIKTOK', label: 'TikTok', shortLabel: 'TikTok',
+    icon: <Music className="h-3.5 w-3.5" />,
+    color: 'text-[#FE2C55]', bg: 'bg-rose-50',
+    activeBg: 'bg-[#010101] text-white',
+    badgeColor: 'bg-[#FE2C55] text-white',
   },
 ];
 
@@ -78,6 +100,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
   const debouncedSearch = useDebounce(searchInput, 700);
 
   const { data: shops } = useShops();
+  const { data: unreadData } = useUnreadSummary();
 
   const {
     data,
@@ -105,8 +128,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
   const handleScroll = useCallback(() => {
     const el = listRef.current;
     if (!el || isFetchingNextPage || !hasNextPage) return;
-    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-    if (nearBottom) fetchNextPage();
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 100) fetchNextPage();
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
@@ -140,21 +162,32 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
         )}
       </div>
 
-      {/* Platform filter */}
-      <div className="grid grid-cols-2 gap-1.5 border-b border-gray-100 px-3 py-2">
+      {/* Platform filter with unread badges */}
+      <div className="flex flex-wrap gap-1 border-b border-gray-100 px-2 py-2">
         {PLATFORMS.map((p) => {
           const isActive = platformFilter === p.key;
+          const unread = p.key
+            ? (unreadData?.byPlatform[p.key] ?? 0)
+            : (unreadData?.total ?? 0);
           return (
             <button
               key={p.key ?? 'all'}
               onClick={() => setPlatformFilter(isActive && p.key !== null ? null : p.key)}
               className={cn(
-                'flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-all',
+                'relative flex items-center gap-1 rounded-full px-2.5 py-1.5 text-[11px] font-medium transition-all',
                 isActive ? p.activeBg : cn(p.bg, p.color, 'hover:opacity-80'),
               )}
             >
               {p.icon}
-              <span>{p.label}</span>
+              <span>{p.shortLabel}</span>
+              {unread > 0 && (
+                <span className={cn(
+                  'ml-0.5 min-w-[16px] rounded-full px-1 text-center text-[9px] font-bold leading-[16px]',
+                  isActive ? 'bg-white/30 text-white' : p.badgeColor,
+                )}>
+                  {unread > 99 ? '99+' : unread}
+                </span>
+              )}
             </button>
           );
         })}
@@ -169,7 +202,7 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
             placeholder="ค้นหาลูกค้า..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="w-full rounded-lg bg-gray-100 py-2 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
+            className="w-full rounded-lg bg-gray-100 py-2 pl-9 pr-8 text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
           {searchInput && (
             <button
@@ -207,13 +240,9 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
                 }}
               />
             ))}
-            {isFetchingNextPage && (
-              <Spinner className="py-3" label="" />
-            )}
+            {isFetchingNextPage && <Spinner className="py-3" label="" />}
             {!hasNextPage && rooms.length >= 20 && (
-              <p className="py-3 text-center text-xs text-gray-300">
-                แสดงทั้งหมดแล้ว
-              </p>
+              <p className="py-3 text-center text-xs text-gray-300">แสดงทั้งหมดแล้ว</p>
             )}
           </>
         )}

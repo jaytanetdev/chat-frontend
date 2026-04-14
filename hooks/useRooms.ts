@@ -2,7 +2,7 @@
 
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import api from '@/lib/axios';
-import type { Room, Shop, PaginatedRooms } from '@/types/api';
+import type { Room, Shop, PaginatedRooms, UnreadSummary } from '@/types/api';
 
 export function useRooms(platformId?: string | null) {
   return useQuery<Room[]>({
@@ -38,6 +38,17 @@ export function useInfiniteRooms(params: {
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
+  });
+}
+
+export function useUnreadSummary() {
+  return useQuery<UnreadSummary>({
+    queryKey: ['unread-summary'],
+    queryFn: async () => {
+      const res = await api.get<UnreadSummary>('/rooms/unread-summary');
+      return res.data;
+    },
+    refetchInterval: 15000,
   });
 }
 

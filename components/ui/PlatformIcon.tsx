@@ -1,7 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/cn';
-import { MessageCircle, Facebook, Instagram, ShoppingBag, Package } from 'lucide-react';
+import { MessageCircle, Facebook, Instagram, ShoppingBag, Package, Music } from 'lucide-react';
 import { PlatformType } from '@/types/api';
 
 interface PlatformIconProps {
@@ -22,6 +22,7 @@ const colorClasses: Record<PlatformType, string> = {
   [PlatformType.INSTAGRAM]: 'text-pink-500',
   [PlatformType.SHOPEE]: 'text-orange-500',
   [PlatformType.LAZADA]: 'text-blue-500',
+  [PlatformType.TIKTOK]: 'text-[#FE2C55]',
 };
 
 const iconMap: Record<PlatformType, React.ComponentType<{ className?: string }>> = {
@@ -30,6 +31,7 @@ const iconMap: Record<PlatformType, React.ComponentType<{ className?: string }>>
   [PlatformType.INSTAGRAM]: Instagram,
   [PlatformType.SHOPEE]: ShoppingBag,
   [PlatformType.LAZADA]: Package,
+  [PlatformType.TIKTOK]: Music,
 };
 
 export default function PlatformIcon({ type, size = 'md', className }: PlatformIconProps) {

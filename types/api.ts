@@ -4,6 +4,7 @@ export enum PlatformType {
   INSTAGRAM = 'INSTAGRAM',
   SHOPEE = 'SHOPEE',
   LAZADA = 'LAZADA',
+  TIKTOK = 'TIKTOK',
 }
 
 export enum UserRole {
@@ -140,6 +141,11 @@ export interface QuickReply {
   sort_order: number;
   create_at: string;
   update_at: string;
+}
+
+export interface UnreadSummary {
+  total: number;
+  byPlatform: Record<string, number>;
 }
 
 export interface PaginatedRooms {
