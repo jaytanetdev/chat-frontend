@@ -149,7 +149,7 @@ interface StickerPickerProps {
 }
 
 export default function StickerPicker({ platformType, onSelect, onClose }: StickerPickerProps) {
-  const isLine = platformType !== PlatformType.FACEBOOK;
+  const isLine = platformType === PlatformType.LINE;
   const theme = getPlatformTheme(platformType);
 
   const packages = useMemo(

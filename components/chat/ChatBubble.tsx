@@ -85,7 +85,7 @@ function MediaContent({ chat }: { chat: Chat }) {
         return <span className="text-7xl leading-none">{emoji}</span>;
       }
 
-      if (metaPlatform === 'FACEBOOK' && stickerId) {
+      if ((metaPlatform === 'FACEBOOK' || metaPlatform === 'INSTAGRAM') && stickerId) {
         const knownFbStickers: Record<string, string> = {
           '369239263222822': '\u{1F44D}',
           '369239343222814': '\u{1F44D}',
@@ -95,9 +95,13 @@ function MediaContent({ chat }: { chat: Chat }) {
         if (mappedEmoji) {
           return <span className="text-7xl leading-none">{mappedEmoji}</span>;
         }
+        try {
+          const emojiFromCode = String.fromCodePoint(parseInt(stickerId, 16));
+          return <span className="text-7xl leading-none">{emojiFromCode}</span>;
+        } catch { /* fall through */ }
         return (
           <span className="flex h-24 w-24 items-center justify-center rounded-lg bg-gray-50 text-sm text-gray-400">
-            [FB Sticker]
+            [Sticker]
           </span>
         );
       }

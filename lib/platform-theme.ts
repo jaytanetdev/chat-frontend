@@ -52,20 +52,20 @@ const FACEBOOK_THEME: PlatformTheme = {
 };
 
 const INSTAGRAM_THEME: PlatformTheme = {
-  bubble: 'bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white',
-  bubbleHover: '',
+  bubble: 'bg-[#E1306C] text-white',
+  bubbleHover: 'hover:bg-[#c4256d]',
   text: 'text-white',
   timeText: 'text-pink-200',
-  senderName: 'text-[#DD2A7B]',
-  inputFocus: 'focus:border-[#DD2A7B] focus:ring-[#DD2A7B]',
-  sendBtn: 'bg-[#DD2A7B] text-white',
+  senderName: 'text-[#E1306C]',
+  inputFocus: 'focus:border-[#E1306C] focus:ring-[#E1306C]',
+  sendBtn: 'bg-[#E1306C] text-white',
   sendBtnHover: 'hover:bg-[#c4256d]',
-  activeTab: 'bg-[#DD2A7B]/10 text-[#DD2A7B] ring-[#DD2A7B]/30',
-  scrollBtn: 'bg-[#DD2A7B] hover:bg-[#c4256d]',
+  activeTab: 'bg-[#E1306C]/10 text-[#E1306C] ring-[#E1306C]/30',
+  scrollBtn: 'bg-[#E1306C] hover:bg-[#c4256d]',
   scrollBtnHover: 'hover:bg-[#c4256d]',
-  badgeText: 'text-[#DD2A7B]',
-  unreadTime: 'text-[#DD2A7B]',
-  activeRoom: 'bg-[#DD2A7B]/5 hover:bg-[#DD2A7B]/5',
+  badgeText: 'text-[#E1306C]',
+  unreadTime: 'text-[#E1306C]',
+  activeRoom: 'bg-[#E1306C]/5 hover:bg-[#E1306C]/5',
 };
 
 const SHOPEE_THEME: PlatformTheme = {
