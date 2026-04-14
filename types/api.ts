@@ -94,6 +94,7 @@ export interface Room {
   assigned_user_id: string | null;
   unread_count: number;
   last_message_at: string | null;
+  last_message_text: string | null;
   status: RoomStatus;
   create_at: string;
   update_at: string;
@@ -129,6 +130,16 @@ export interface LoginResponse {
   user_id: string;
   role: UserRole;
   username: string;
+}
+
+export interface QuickReply {
+  quick_reply_id: string;
+  user_id: string;
+  label: string;
+  text: string;
+  sort_order: number;
+  create_at: string;
+  update_at: string;
 }
 
 export interface ApiErrorResponse {

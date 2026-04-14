@@ -17,9 +17,13 @@ function formatTime(dateStr: string | null): string {
   const date = new Date(dateStr);
   const now = new Date();
   const diff = now.getTime() - date.getTime();
+  const mins = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
 
-  if (days === 0) {
+  if (mins < 1) return 'เมื่อสักครู่';
+  if (mins < 60) return `${mins} นาที`;
+  if (hours < 24) {
     return date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
   }
   if (days === 1) return 'เมื่อวาน';
@@ -31,12 +35,14 @@ export default function RoomItem({ room, isActive, onClick }: RoomItemProps) {
   const customer = room.customer_identity;
   const displayName = customer?.display_name ?? customer?.external_user_id ?? 'ไม่ทราบชื่อ';
   const platformType = room.platform?.platform_type;
+  const hasUnread = room.unread_count > 0;
+  const lastMessage = room.last_message_text;
 
   return (
     <button
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-colors hover:bg-gray-50',
+        'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-50',
         isActive && 'bg-primary-50 hover:bg-primary-50',
       )}
     >
@@ -57,17 +63,23 @@ export default function RoomItem({ room, isActive, onClick }: RoomItemProps) {
         <div className="flex items-center justify-between gap-2">
           <p className={cn(
             'truncate text-sm',
-            room.unread_count > 0 ? 'font-semibold text-gray-900' : 'font-medium text-gray-700',
+            hasUnread ? 'font-semibold text-gray-900' : 'font-medium text-gray-700',
           )}>
             {displayName}
           </p>
-          <span className="shrink-0 text-[11px] text-gray-400">
+          <span className={cn(
+            'shrink-0 text-[11px]',
+            hasUnread ? 'font-medium text-primary-500' : 'text-gray-400',
+          )}>
             {formatTime(room.last_message_at)}
           </span>
         </div>
         <div className="flex items-center justify-between gap-2 mt-0.5">
-          <p className="truncate text-xs text-gray-500">
-            {room.platform?.platform_name ?? platformType ?? ''}
+          <p className={cn(
+            'truncate text-xs',
+            hasUnread ? 'font-medium text-gray-700' : 'text-gray-400',
+          )}>
+            {lastMessage || room.platform?.platform_name || platformType || ''}
           </p>
           <Badge count={room.unread_count} />
         </div>

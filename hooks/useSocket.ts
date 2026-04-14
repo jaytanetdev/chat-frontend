@@ -14,6 +14,8 @@ function handleNewMessage(chat: Chat) {
   const qc = queryClientRef.current;
   if (!qc) return;
 
+  const activeRoomId = useChatStore.getState().activeRoomId;
+
   // Optimistically append the message to the active room's cache
   qc.setQueryData(
     ['messages', chat.room_id],
@@ -38,11 +40,21 @@ function handleNewMessage(chat: Chat) {
     },
   );
 
-  // Always refresh room list so sidebar shows latest message / unread count
+  if (chat.room_id === activeRoomId) {
+    qc.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
+      if (!oldRooms) return oldRooms;
+      return oldRooms.map((r) =>
+        r.room_id === chat.room_id
+          ? { ...r, unread_count: 0, last_message_at: chat.create_at, last_message_text: chat.message }
+          : r,
+      );
+    });
+  }
+
   qc.invalidateQueries({ queryKey: ['rooms'] });
 }
 
-function handleRoomUpdated(data: { room_id: string; unread_count?: number; last_message_at?: string }) {
+function handleRoomUpdated(data: { room_id: string; unread_count?: number; last_message_at?: string; last_message_text?: string }) {
   const qc = queryClientRef.current;
   if (!qc) return;
 
@@ -51,20 +63,26 @@ function handleRoomUpdated(data: { room_id: string; unread_count?: number; last_
 
     const roomExists = oldRooms.some((r) => r.room_id === data.room_id);
     if (!roomExists) {
-      // New room from a new customer — refetch the full list
       qc.invalidateQueries({ queryKey: ['rooms'] });
       return oldRooms;
     }
 
-    return oldRooms.map((room) =>
+    const updated = oldRooms.map((room) =>
       room.room_id === data.room_id
         ? {
             ...room,
             unread_count: data.unread_count ?? room.unread_count,
             last_message_at: data.last_message_at ?? room.last_message_at,
+            last_message_text: data.last_message_text ?? room.last_message_text,
           }
         : room,
     );
+
+    return updated.sort((a, b) => {
+      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+      return tb - ta;
+    });
   });
 }
 

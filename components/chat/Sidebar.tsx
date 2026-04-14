@@ -18,13 +18,13 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const PLATFORM_TABS: { key: string | null; label: string; type?: PlatformType }[] = [
-  { key: null, label: 'ทั้งหมด' },
-  { key: 'LINE', label: 'LINE', type: PlatformType.LINE },
-  { key: 'FACEBOOK', label: 'Facebook', type: PlatformType.FACEBOOK },
-  { key: 'INSTAGRAM', label: 'IG', type: PlatformType.INSTAGRAM },
-  { key: 'SHOPEE', label: 'Shopee', type: PlatformType.SHOPEE },
-  { key: 'LAZADA', label: 'Lazada', type: PlatformType.LAZADA },
+const PLATFORM_TABS: { key: string | null; label: string; type?: PlatformType; activeClass: string }[] = [
+  { key: null, label: 'ทั้งหมด', activeClass: 'bg-gray-800 text-white' },
+  { key: 'LINE', label: 'LINE', type: PlatformType.LINE, activeClass: 'bg-[#06C755] text-white' },
+  { key: 'FACEBOOK', label: 'Facebook', type: PlatformType.FACEBOOK, activeClass: 'bg-[#1877F2] text-white' },
+  { key: 'INSTAGRAM', label: 'IG', type: PlatformType.INSTAGRAM, activeClass: 'bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white' },
+  { key: 'SHOPEE', label: 'Shopee', type: PlatformType.SHOPEE, activeClass: 'bg-[#EE4D2D] text-white' },
+  { key: 'LAZADA', label: 'Lazada', type: PlatformType.LAZADA, activeClass: 'bg-[#0F1689] text-white' },
 ];
 
 export default function Sidebar({ onClose }: SidebarProps = {}) {
@@ -61,7 +61,11 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
       });
     }
 
-    return result;
+    return [...result].sort((a, b) => {
+      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+      return tb - ta;
+    });
   }, [rooms, activeShopId, platformFilter, searchQuery]);
 
   return (
@@ -97,22 +101,25 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
 
       {/* Platform filter tabs */}
       <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-2 py-2 sm:px-3">
-        {PLATFORM_TABS.map((tab) => (
-          <button
-            key={tab.key ?? 'all'}
-            onClick={() => setPlatformFilter(tab.key)}
-            className={cn(
-              'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-colors sm:px-3',
-              platformFilter === tab.key
-                ? 'bg-primary-500 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
-            )}
-          >
-            {tab.type && <PlatformIcon type={tab.type} size="sm" className={platformFilter === tab.key ? 'text-white' : ''} />}
-            <span className="hidden sm:inline">{tab.label}</span>
-            <span className="sm:hidden">{tab.label.length > 4 ? tab.label.substring(0, 4) : tab.label}</span>
-          </button>
-        ))}
+        {PLATFORM_TABS.map((tab) => {
+          const isActive = platformFilter === tab.key;
+          return (
+            <button
+              key={tab.key ?? 'all'}
+              onClick={() => setPlatformFilter(tab.key)}
+              className={cn(
+                'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-all sm:px-3',
+                isActive
+                  ? tab.activeClass
+                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+              )}
+            >
+              {tab.type && <PlatformIcon type={tab.type} size="sm" className={isActive ? 'text-white' : ''} />}
+              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="sm:hidden">{tab.label.length > 4 ? tab.label.substring(0, 4) : tab.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Search */}
