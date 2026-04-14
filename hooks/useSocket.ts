@@ -5,10 +5,34 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { getSocket, disconnectSocket } from '@/lib/socket';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
-import type { Chat, Room, ChatListResponse } from '@/types/api';
+import type { Chat, Room, ChatListResponse, PaginatedRooms } from '@/types/api';
 import type { Socket } from 'socket.io-client';
+import type { InfiniteData } from '@tanstack/react-query';
 
 const queryClientRef: { current: QueryClient | null } = { current: null };
+
+function sortRooms(rooms: Room[]): Room[] {
+  return rooms.sort((a, b) => {
+    const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
+    const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
+    return tb - ta;
+  });
+}
+
+function updateRoomInPages(
+  old: InfiniteData<PaginatedRooms> | undefined,
+  roomId: string,
+  updater: (room: Room) => Room,
+): InfiniteData<PaginatedRooms> | undefined {
+  if (!old) return old;
+  return {
+    ...old,
+    pages: old.pages.map((page) => ({
+      ...page,
+      items: sortRooms(page.items.map((r) => (r.room_id === roomId ? updater(r) : r))),
+    })),
+  };
+}
 
 function handleNewMessage(chat: Chat) {
   const qc = queryClientRef.current;
@@ -40,25 +64,17 @@ function handleNewMessage(chat: Chat) {
     },
   );
 
-  qc.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
-    if (!oldRooms) return oldRooms;
-    const updated = oldRooms.map((r) =>
-      r.room_id === chat.room_id
-        ? {
-            ...r,
-            last_message_at: chat.create_at,
-            last_message_text: chat.message || r.last_message_text,
-            ...(isActiveRoom ? { unread_count: 0 } : {}),
-          }
-        : r,
-    );
-    return updated.sort((a, b) => {
-      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-      return tb - ta;
-    });
-  });
+  qc.setQueriesData<InfiniteData<PaginatedRooms>>(
+    { queryKey: ['rooms-infinite'] },
+    (old) => updateRoomInPages(old, chat.room_id, (r) => ({
+      ...r,
+      last_message_at: chat.create_at,
+      last_message_text: chat.message || r.last_message_text,
+      ...(isActiveRoom ? { unread_count: 0 } : {}),
+    })),
+  );
 
+  qc.invalidateQueries({ queryKey: ['rooms-infinite'] });
   qc.invalidateQueries({ queryKey: ['rooms'] });
 }
 
@@ -66,32 +82,23 @@ function handleRoomUpdated(data: { room_id: string; unread_count?: number; last_
   const qc = queryClientRef.current;
   if (!qc) return;
 
-  qc.setQueryData(['rooms'], (oldRooms: Room[] | undefined) => {
-    if (!oldRooms) return oldRooms;
-
-    const roomExists = oldRooms.some((r) => r.room_id === data.room_id);
-    if (!roomExists) {
-      qc.invalidateQueries({ queryKey: ['rooms'] });
-      return oldRooms;
-    }
-
-    const updated = oldRooms.map((room) =>
-      room.room_id === data.room_id
-        ? {
-            ...room,
-            unread_count: data.unread_count ?? room.unread_count,
-            last_message_at: data.last_message_at ?? room.last_message_at,
-            last_message_text: data.last_message_text ?? room.last_message_text,
-          }
-        : room,
-    );
-
-    return updated.sort((a, b) => {
-      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-      return tb - ta;
-    });
-  });
+  qc.setQueriesData<InfiniteData<PaginatedRooms>>(
+    { queryKey: ['rooms-infinite'] },
+    (old) => {
+      if (!old) return old;
+      const roomExists = old.pages.some((p) => p.items.some((r) => r.room_id === data.room_id));
+      if (!roomExists) {
+        qc.invalidateQueries({ queryKey: ['rooms-infinite'] });
+        return old;
+      }
+      return updateRoomInPages(old, data.room_id, (room) => ({
+        ...room,
+        unread_count: data.unread_count ?? room.unread_count,
+        last_message_at: data.last_message_at ?? room.last_message_at,
+        last_message_text: data.last_message_text ?? room.last_message_text,
+      }));
+    },
+  );
 }
 
 function handleTyping(data: { room_id: string; user_id: string; username: string; is_typing: boolean }) {

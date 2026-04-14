@@ -1,31 +1,71 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Search, MessageSquare, X } from 'lucide-react';
+import { Search, MessageSquare, X, MessageCircle, Facebook, Instagram } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import RoomItem from './RoomItem';
 import AdminProfile from '@/components/layout/AdminProfile';
-import PlatformIcon from '@/components/ui/PlatformIcon';
 import Spinner from '@/components/ui/Spinner';
-import { useRooms, useShops } from '@/hooks/useRooms';
+import { useInfiniteRooms, useShops } from '@/hooks/useRooms';
 import { useAuthStore } from '@/stores/auth.store';
 import { useChatStore } from '@/stores/chat.store';
 import { PlatformType, type Room } from '@/types/api';
-import { useState } from 'react';
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
-const PLATFORM_TABS: { key: string | null; label: string; type?: PlatformType; activeClass: string }[] = [
-  { key: null, label: 'ทั้งหมด', activeClass: 'bg-gray-800 text-white' },
-  { key: 'LINE', label: 'LINE', type: PlatformType.LINE, activeClass: 'bg-[#06C755] text-white' },
-  { key: 'FACEBOOK', label: 'Facebook', type: PlatformType.FACEBOOK, activeClass: 'bg-[#1877F2] text-white' },
-  { key: 'INSTAGRAM', label: 'IG', type: PlatformType.INSTAGRAM, activeClass: 'bg-gradient-to-r from-[#F58529] via-[#DD2A7B] to-[#8134AF] text-white' },
-  { key: 'SHOPEE', label: 'Shopee', type: PlatformType.SHOPEE, activeClass: 'bg-[#EE4D2D] text-white' },
-  { key: 'LAZADA', label: 'Lazada', type: PlatformType.LAZADA, activeClass: 'bg-[#0F1689] text-white' },
+const PLATFORMS: {
+  key: string | null;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  bg: string;
+  activeBg: string;
+}[] = [
+  {
+    key: null,
+    label: 'ทั้งหมด',
+    icon: <MessageSquare className="h-4 w-4" />,
+    color: 'text-gray-600',
+    bg: 'bg-gray-50',
+    activeBg: 'bg-gray-900 text-white',
+  },
+  {
+    key: 'LINE',
+    label: 'LINE',
+    icon: <MessageCircle className="h-4 w-4" />,
+    color: 'text-[#06C755]',
+    bg: 'bg-green-50',
+    activeBg: 'bg-[#06C755] text-white',
+  },
+  {
+    key: 'FACEBOOK',
+    label: 'Facebook',
+    icon: <Facebook className="h-4 w-4" />,
+    color: 'text-[#1877F2]',
+    bg: 'bg-blue-50',
+    activeBg: 'bg-[#1877F2] text-white',
+  },
+  {
+    key: 'INSTAGRAM',
+    label: 'Instagram',
+    icon: <Instagram className="h-4 w-4" />,
+    color: 'text-[#E1306C]',
+    bg: 'bg-pink-50',
+    activeBg: 'bg-[#E1306C] text-white',
+  },
 ];
+
+function useDebounce(value: string, delay: number): string {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
 
 export default function Sidebar({ onClose }: SidebarProps = {}) {
   const router = useRouter();
@@ -34,39 +74,40 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
 
   const { activeShopId, setActiveShopId } = useAuthStore();
   const { platformFilter, setPlatformFilter } = useChatStore();
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const debouncedSearch = useDebounce(searchInput, 700);
 
   const { data: shops } = useShops();
-  const { data: rooms, isLoading } = useRooms();
 
-  const filteredRooms = useMemo(() => {
-    if (!rooms) return [];
-    let result = rooms;
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteRooms({
+    platformType: platformFilter,
+    search: debouncedSearch,
+    limit: 20,
+  });
 
+  const rooms = useMemo(() => {
+    if (!data) return [];
+    const all = data.pages.flatMap((p) => p.items);
     if (activeShopId) {
-      result = result.filter((r) => r.platform?.shop_id === activeShopId);
+      return all.filter((r) => r.platform?.shop_id === activeShopId);
     }
+    return all;
+  }, [data, activeShopId]);
 
-    if (platformFilter) {
-      result = result.filter(
-        (r) => r.platform?.platform_type === platformFilter,
-      );
-    }
+  const listRef = useRef<HTMLDivElement>(null);
 
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter((r) => {
-        const name = r.customer_identity?.display_name ?? r.customer_identity?.external_user_id ?? '';
-        return name.toLowerCase().includes(q);
-      });
-    }
-
-    return [...result].sort((a, b) => {
-      const ta = a.last_message_at ? new Date(a.last_message_at).getTime() : 0;
-      const tb = b.last_message_at ? new Date(b.last_message_at).getTime() : 0;
-      return tb - ta;
-    });
-  }, [rooms, activeShopId, platformFilter, searchQuery]);
+  const handleScroll = useCallback(() => {
+    const el = listRef.current;
+    if (!el || isFetchingNextPage || !hasNextPage) return;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+    if (nearBottom) fetchNextPage();
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   return (
     <div className="flex h-full w-72 flex-col border-r border-gray-200 bg-white sm:w-80">
@@ -99,24 +140,21 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
         )}
       </div>
 
-      {/* Platform filter tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-100 px-2 py-2 sm:px-3">
-        {PLATFORM_TABS.map((tab) => {
-          const isActive = platformFilter === tab.key;
+      {/* Platform filter */}
+      <div className="grid grid-cols-2 gap-1.5 border-b border-gray-100 px-3 py-2">
+        {PLATFORMS.map((p) => {
+          const isActive = platformFilter === p.key;
           return (
             <button
-              key={tab.key ?? 'all'}
-              onClick={() => setPlatformFilter(tab.key)}
+              key={p.key ?? 'all'}
+              onClick={() => setPlatformFilter(isActive && p.key !== null ? null : p.key)}
               className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-xs font-medium transition-all sm:px-3',
-                isActive
-                  ? tab.activeClass
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200',
+                'flex items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-medium transition-all',
+                isActive ? p.activeBg : cn(p.bg, p.color, 'hover:opacity-80'),
               )}
             >
-              {tab.type && <PlatformIcon type={tab.type} size="sm" className={isActive ? 'text-white' : ''} />}
-              <span className="hidden sm:inline">{tab.label}</span>
-              <span className="sm:hidden">{tab.label.length > 4 ? tab.label.substring(0, 4) : tab.label}</span>
+              {p.icon}
+              <span>{p.label}</span>
             </button>
           );
         })}
@@ -129,33 +167,55 @@ export default function Sidebar({ onClose }: SidebarProps = {}) {
           <input
             type="text"
             placeholder="ค้นหาลูกค้า..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="w-full rounded-lg bg-gray-100 py-2 pl-9 pr-3 text-sm placeholder:text-gray-400 focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary-500"
           />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-0.5 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Room list */}
-      <div className="flex-1 overflow-y-auto px-2">
+      {/* Room list with infinite scroll */}
+      <div
+        ref={listRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto px-2"
+      >
         {isLoading ? (
           <Spinner className="py-10" label="กำลังโหลด..." />
-        ) : filteredRooms.length === 0 ? (
+        ) : rooms.length === 0 ? (
           <div className="py-10 text-center text-sm text-gray-400">
-            ไม่พบห้องแชท
+            {debouncedSearch ? 'ไม่พบผลลัพธ์' : 'ไม่พบห้องแชท'}
           </div>
         ) : (
-          filteredRooms.map((room: Room) => (
-            <RoomItem
-              key={room.room_id}
-              room={room}
-              isActive={activeRoomId === room.room_id}
-              onClick={() => {
-                router.push(`/chat/${room.room_id}`);
-                onClose?.();
-              }}
-            />
-          ))
+          <>
+            {rooms.map((room: Room) => (
+              <RoomItem
+                key={room.room_id}
+                room={room}
+                isActive={activeRoomId === room.room_id}
+                onClick={() => {
+                  router.push(`/chat/${room.room_id}`);
+                  onClose?.();
+                }}
+              />
+            ))}
+            {isFetchingNextPage && (
+              <Spinner className="py-3" label="" />
+            )}
+            {!hasNextPage && rooms.length >= 20 && (
+              <p className="py-3 text-center text-xs text-gray-300">
+                แสดงทั้งหมดแล้ว
+              </p>
+            )}
+          </>
         )}
       </div>
 

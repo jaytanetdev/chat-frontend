@@ -142,6 +142,14 @@ export interface QuickReply {
   update_at: string;
 }
 
+export interface PaginatedRooms {
+  items: Room[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
 export interface ApiErrorResponse {
   statusCode: number;
   error_code: string;
