@@ -3,7 +3,8 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Send, Image, Paperclip, X, Zap, RotateCcw, Settings, Plus, Trash2 } from 'lucide-react';
+import { Send, Image, Paperclip, X, Zap, RotateCcw, Settings, Plus, Trash2, Smile } from 'lucide-react';
+import StickerPicker from './StickerPicker';
 import { sendMessageSchema, type SendMessageFormData } from '@/schemas/chat.schema';
 import { useSocket } from '@/hooks/useSocket';
 import { cn } from '@/lib/cn';
@@ -40,6 +41,7 @@ export default function ChatInput({ roomId }: ChatInputProps) {
   const [filePreview, setFilePreview] = useState<string | null>(null);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
   const [showQrSettings, setShowQrSettings] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>('idle');
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -229,6 +231,25 @@ export default function ChatInput({ roomId }: ChatInputProps) {
       queryClient.invalidateQueries({ queryKey: ['rooms'] });
     } catch (error) {
       console.error('Failed to send quick reply:', error);
+    } finally {
+      setIsSending(false);
+    }
+  }, [roomId, queryClient, isSending]);
+
+  const sendSticker = useCallback(async (packageId: string, stickerId: string) => {
+    if (isSending) return;
+    setIsSending(true);
+    setShowStickerPicker(false);
+    try {
+      await api.post('/chats/send-sticker', {
+        room_id: roomId,
+        package_id: packageId,
+        sticker_id: stickerId,
+      });
+      queryClient.invalidateQueries({ queryKey: ['messages', roomId] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
+    } catch (error) {
+      console.error('Failed to send sticker:', error);
     } finally {
       setIsSending(false);
     }
@@ -475,7 +496,7 @@ export default function ChatInput({ roomId }: ChatInputProps) {
           </button>
           <button
             type="button"
-            onClick={() => setShowQuickReplies((p) => !p)}
+            onClick={() => { setShowQuickReplies((p) => !p); setShowStickerPicker(false); }}
             className={cn(
               'rounded-lg p-2 transition-colors',
               showQuickReplies ? 'bg-primary-50 text-primary-500' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
@@ -483,6 +504,17 @@ export default function ChatInput({ roomId }: ChatInputProps) {
             title="ข้อความด่วน (กดปุ่ม /)"
           >
             <Zap className="h-5 w-5" />
+          </button>
+          <button
+            type="button"
+            onClick={() => { setShowStickerPicker((p) => !p); setShowQuickReplies(false); }}
+            className={cn(
+              'rounded-lg p-2 transition-colors',
+              showStickerPicker ? 'bg-primary-50 text-primary-500' : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600',
+            )}
+            title="สติกเกอร์"
+          >
+            <Smile className="h-5 w-5" />
           </button>
         </div>
 
@@ -513,6 +545,13 @@ export default function ChatInput({ roomId }: ChatInputProps) {
           <Send className="h-5 w-5" />
         </button>
       </form>
+
+      {showStickerPicker && (
+        <StickerPicker
+          onSelect={sendSticker}
+          onClose={() => setShowStickerPicker(false)}
+        />
+      )}
     </div>
   );
 }
