@@ -348,7 +348,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
                   placeholder="ชื่อปุ่ม (เช่น สวัสดี)"
                   value={newLabel}
                   onChange={(e) => setNewLabel(e.target.value)}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-primary-400 focus:outline-none"
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-base sm:text-xs focus:border-primary-400 focus:outline-none"
                   maxLength={20}
                 />
                 <input
@@ -356,7 +356,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
                   placeholder="ข้อความเต็ม..."
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
-                  className="w-full rounded border border-gray-200 px-2 py-1 text-xs focus:border-primary-400 focus:outline-none"
+                  className="w-full rounded border border-gray-200 px-2 py-1 text-base sm:text-xs focus:border-primary-400 focus:outline-none"
                 />
               </div>
               <button
@@ -533,7 +533,7 @@ export default function ChatInput({ roomId, platformType = PlatformType.LINE }: 
           onInput={handleInput}
           onFocus={handleInputFocus}
           className={cn(
-            'flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm sm:px-4 sm:py-2.5 focus:outline-none focus:ring-1',
+            'flex-1 resize-none rounded-xl border border-gray-300 px-3 py-2 text-base sm:px-4 sm:py-2.5 sm:text-sm focus:outline-none focus:ring-1',
             theme.inputFocus,
           )}
         />
